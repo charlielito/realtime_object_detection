@@ -285,8 +285,8 @@ def detection(detection_graph, category_index, score, expand):
                         if cur_frames%det_interval==0 and score > det_th:
                             label = category_index[_class]['name']
                             print("label: {}\nscore: {}\nbox: {}".format(label, score, box))
-                    if cur_frames >= max_frames:
-                        break
+                    # if cur_frames >= max_frames:
+                    #     break
                 fps.update()
 
     # End everything

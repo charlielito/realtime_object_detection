@@ -95,7 +95,10 @@ def load_frozenmodel():
         # load a frozen Model and split it into GPU and CPU graphs
         # Hardcoded for ssd_mobilenet
         input_graph = tf.Graph()
-        with tf.Session(graph=input_graph):
+        config = tf.ConfigProto()
+        config.gpu_options.allow_growth=True
+        config.gpu_options.per_process_gpu_memory_fraction = 0.1
+        with tf.Session(graph=input_graph, config=config):
             if ssd_shape == 600:
                 shape = 7326
             else:
@@ -179,6 +182,7 @@ def detection(detection_graph, category_index, score, expand):
     # Session Config: allow seperate GPU/CPU adressing and limit memory allocation
     config = tf.ConfigProto(allow_soft_placement=True, log_device_placement=log_device)
     config.gpu_options.allow_growth=allow_memory_growth
+    config.gpu_options.per_process_gpu_memory_fraction = 0.1
     cur_frames = 0
     with detection_graph.as_default():
         with tf.Session(graph=detection_graph,config=config) as sess:
@@ -291,7 +295,7 @@ def detection(detection_graph, category_index, score, expand):
         cpu_worker.stop()
     fps.stop()
     # video_stream.stop()
-    cv2.destroyAllWindows()
+    # cv2.destroyAllWindows()
     print('[INFO] elapsed time (total): {:.2f}'.format(fps.elapsed()))
     print('[INFO] approx. FPS: {:.2f}'.format(fps.fps()))
 

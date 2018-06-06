@@ -24,6 +24,9 @@ from stuff.helper import FPS2, WebcamVideoStream, SessionWorker
 
 import time
 
+from easy_memmap import EasyMemmap, MultiImagesMemmap
+ 
+
 ## LOAD CONFIG PARAMS ##
 if (os.path.isfile('config.yml')):
     with open("config.yml", 'r') as ymlfile:
@@ -199,17 +202,19 @@ def detection(detection_graph, category_index, score, expand):
                 cpu_counter = 0
             # Start Video Stream and FPS calculation
             fps = FPS2(fps_interval).start()
-            video_stream = WebcamVideoStream(video_input,width,height).start()
+            video_path = os.getenv("MEMMAP_PATH", "/tmp")
+            video_map = MultiImagesMemmap(mode = "r", name = "main_stream", memmap_path = video_path)
+            video_map.wait_until_available()
             cur_frames = 0
             print("Press 'q' to Exit")
             print('Starting Detection')
-            while video_stream.isActive():
+            while True:
                 # actual Detection
                 if split_model:
                     # split model in seperate gpu and cpu session threads
                     if gpu_worker.is_sess_empty():
                         # read video frame, expand dimensions and convert to rgb
-                        image = video_stream.read()
+                        image = video_map.read("C")
                         image_expanded = np.expand_dims(cv2.cvtColor(image, cv2.COLOR_BGR2RGB), axis=0)
                         # put new queue
                         gpu_feeds = {image_tensor: image_expanded}
@@ -246,7 +251,7 @@ def detection(detection_graph, category_index, score, expand):
                         boxes, scores, classes, num, image = c["results"][0],c["results"][1],c["results"][2],c["results"][3],c["extras"]
                 else:
                     # default session
-                    image = video_stream.read()
+                    image = video_map.read("C")
                     image_expanded = np.expand_dims(cv2.cvtColor(image, cv2.COLOR_BGR2RGB), axis=0)
                     boxes, scores, classes, num = sess.run(
                             [detection_boxes, detection_scores, detection_classes, num_detections],
@@ -285,7 +290,7 @@ def detection(detection_graph, category_index, score, expand):
         gpu_worker.stop()
         cpu_worker.stop()
     fps.stop()
-    video_stream.stop()
+    # video_stream.stop()
     cv2.destroyAllWindows()
     print('[INFO] elapsed time (total): {:.2f}'.format(fps.elapsed()))
     print('[INFO] approx. FPS: {:.2f}'.format(fps.fps()))

@@ -233,8 +233,8 @@ def process_gpu():
 
             video_stream = WebcamVideoStream(video_input,width,height).start()
             print('Starting Detection')
-            #skip_counter = 0
-            #fps = FPS2(fps_interval).start()
+            skip_counter = 0
+            fps = FPS2(fps_interval).start()
             try:
                 while video_stream.isActive():
                     if not running.value:
@@ -251,14 +251,14 @@ def process_gpu():
                     results = sess.run(gpu_opts,feed_dict=gpu_feeds)
                     # send result to conn
                     gpu_out_conn.send({"results":results,"extras":gpu_extras})
-                    #fps.update()
-                    #print("GPU FPS:{:.1f} Skip:{}".format(fps.fps_local(),skip_counter))
+                    fps.update()
+                    print("GPU FPS:{:.1f} Skip:{}".format(fps.fps_local(),skip_counter))
             except Exception as e:
                 import traceback
                 traceback.print_exc()
             finally:
                 running.value = False
-                #fps.stop()
+                fps.stop()
                 video_stream.stop()
                 gpu_out_conn.close()
                 cpu_in_conn.close()

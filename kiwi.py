@@ -182,7 +182,7 @@ def detection(detection_graph, category_index, score, expand):
     # Session Config: allow seperate GPU/CPU adressing and limit memory allocation
     config = tf.ConfigProto(allow_soft_placement=True, log_device_placement=log_device)
     config.gpu_options.allow_growth=allow_memory_growth
-    config.gpu_options.per_process_gpu_memory_fraction = 0.1
+    config.gpu_options.per_process_gpu_memory_fraction = 0.4
     cur_frames = 0
     with detection_graph.as_default():
         with tf.Session(graph=detection_graph,config=config) as sess:
@@ -207,11 +207,11 @@ def detection(detection_graph, category_index, score, expand):
             # Start Video Stream and FPS calculation
             fps = FPS2(fps_interval).start()
 
-            # video_path = os.getenv("MEMMAP_PATH", "/tmp")
-            # video_map = MultiImagesMemmap(mode = "r", name = "main_stream", memmap_path = video_path)
-            # video_map.wait_until_available()
+            video_path = os.getenv("MEMMAP_PATH", "/tmp")
+            video_map = MultiImagesMemmap(mode = "r", name = "main_stream", memmap_path = video_path)
+            video_map.wait_until_available()
             
-            video_stream = WebcamVideoStream(video_input,width,height).start()
+            # video_stream = WebcamVideoStream(video_input,width,height).start()
 
             cur_frames = 0
             print("Press 'q' to Exit")
@@ -222,8 +222,8 @@ def detection(detection_graph, category_index, score, expand):
                     # split model in seperate gpu and cpu session threads
                     if gpu_worker.is_sess_empty():
                         # read video frame, expand dimensions and convert to rgb
-                        # image = video_map.read("C")
-                        image = video_stream.read()
+                        image = video_map.read("C")
+                        # image = video_stream.read()
                         image_expanded = np.expand_dims(cv2.cvtColor(image, cv2.COLOR_BGR2RGB), axis=0)
                         # put new queue
                         gpu_feeds = {image_tensor: image_expanded}
@@ -260,8 +260,8 @@ def detection(detection_graph, category_index, score, expand):
                         boxes, scores, classes, num, image = c["results"][0],c["results"][1],c["results"][2],c["results"][3],c["extras"]
                 else:
                     # default session
-                    # image = video_map.read("C")
-                    image = video_stream.read()
+                    image = video_map.read("C")
+                    # image = video_stream.read()
                     image_expanded = np.expand_dims(cv2.cvtColor(image, cv2.COLOR_BGR2RGB), axis=0)
                     boxes, scores, classes, num = sess.run(
                             [detection_boxes, detection_scores, detection_classes, num_detections],
